@@ -46,6 +46,12 @@ class PoseEngine {
   /**
    * 예측 루프 시작
    */
+  /**
+   * 예측 루프 시작
+   */
+  /**
+   * 예측 루프 시작
+   */
   start() {
     this.isRunning = true;
     this.loop();
@@ -61,9 +67,10 @@ class PoseEngine {
       this.animationId = null;
     }
 
-    if (this.webcam) {
-      this.webcam.stop();
-    }
+    // 웹캠 스트림은 재시작을 위해 계속 유지 (this.webcam.stop() 제거)
+    // if (this.webcam) {
+    //   this.webcam.stop();
+    // }
   }
 
   /**

@@ -21,6 +21,15 @@ async function init() {
 
   startBtn.disabled = true;
 
+  // RESTART LOGIC: If engines exist, just restart them
+  if (poseEngine && gameEngine) {
+    poseEngine.start();
+    gameEngine.start();
+    stopBtn.disabled = false;
+    startBtn.innerText = "Start"; // Reset text
+    return;
+  }
+
   try {
     // 1. PoseEngine 초기화
     poseEngine = new PoseEngine("./my_model/");
@@ -35,13 +44,29 @@ async function init() {
       smoothingFrames: 3
     });
 
-    // 3. GameEngine 초기화 (선택적)
+    // 3. GameEngine 초기화
     gameEngine = new GameEngine();
+
+    // GameEngine Callbacks
+    gameEngine.setGameEndCallback((finalScore, finalLevel) => {
+      // 1. UI Status Update (Start -> Restart)
+      stop();
+
+      const startBtn = document.getElementById("startBtn");
+      startBtn.disabled = true;
+
+      // Alert and Ranking
+      setTimeout(() => {
+        alert(`Game Over! 🎮\nYour Score: ${finalScore}`);
+        if (gameEngine) gameEngine.showRanking = true;
+        startBtn.disabled = false;
+      }, 50);
+    });
 
     // 4. 캔버스 설정
     const canvas = document.getElementById("canvas");
-    canvas.width = 200;
-    canvas.height = 200;
+    canvas.width = 800; // Updated Width
+    canvas.height = 600; // Updated Height
     ctx = canvas.getContext("2d");
 
     // 5. Label Container 설정
@@ -55,8 +80,14 @@ async function init() {
     poseEngine.setPredictionCallback(handlePrediction);
     poseEngine.setDrawCallback(drawPose);
 
-    // 7. PoseEngine 시작
+    // 7. 웹캠 캔버스 배치 (왼쪽)
+    const webcamContainer = document.getElementById("webcam-container");
+    webcamContainer.innerHTML = "";
+    webcamContainer.appendChild(poseEngine.webcam.canvas);
+
+    // 8. 시작
     poseEngine.start();
+    gameEngine.start(); // 게임 시작
 
     stopBtn.disabled = false;
   } catch (error) {
@@ -69,15 +100,19 @@ async function init() {
 /**
  * 애플리케이션 중지
  */
+/**
+ * 애플리케이션 중지
+ */
 function stop() {
   const startBtn = document.getElementById("startBtn");
   const stopBtn = document.getElementById("stopBtn");
+  // const restartBtn = document.getElementById("restartBtn"); // Removed
 
   if (poseEngine) {
     poseEngine.stop();
   }
 
-  if (gameEngine && gameEngine.isGameActive) {
+  if (gameEngine) {
     gameEngine.stop();
   }
 
@@ -87,7 +122,12 @@ function stop() {
 
   startBtn.disabled = false;
   stopBtn.disabled = true;
+
+  // Show Restart Button when stopped
+  startBtn.innerText = "Restart";
 }
+
+
 
 /**
  * 예측 결과 처리 콜백
@@ -109,50 +149,29 @@ function handlePrediction(predictions, pose) {
   const maxPredictionDiv = document.getElementById("max-prediction");
   maxPredictionDiv.innerHTML = stabilized.className || "감지 중...";
 
-  // 4. GameEngine에 포즈 전달 (게임 모드일 경우)
+  // 4. GameEngine에 포즈 전달
   if (gameEngine && gameEngine.isGameActive && stabilized.className) {
     gameEngine.onPoseDetected(stabilized.className);
   }
 }
 
 /**
- * 포즈 그리기 콜백
+ * 포즈 그리기 콜백 (매 프레임 호출됨)
  * @param {Object} pose - PoseNet 포즈 데이터
  */
 function drawPose(pose) {
-  if (poseEngine.webcam && poseEngine.webcam.canvas) {
-    ctx.drawImage(poseEngine.webcam.canvas, 0, 0);
+  // 1. 게임 캔버스 초기화
+  if (ctx) {
+    // FIX: 800x600 해상도에 맞춰 지우기
+    ctx.clearRect(0, 0, 800, 600);
 
-    // 키포인트와 스켈레톤 그리기
-    if (pose) {
-      const minPartConfidence = 0.5;
-      tmPose.drawKeypoints(pose.keypoints, minPartConfidence, ctx);
-      tmPose.drawSkeleton(pose.keypoints, minPartConfidence, ctx);
+    // 2. 게임 엔진 업데이트 및 그리기
+    if (gameEngine) {
+      if (gameEngine.isGameActive) {
+        gameEngine.update();
+      }
+      // Draw always (GameEngine handles what to draw: game or ranking)
+      gameEngine.draw(ctx);
     }
   }
-}
-
-// 게임 모드 시작 함수 (선택적 - 향후 확장용)
-function startGameMode(config) {
-  if (!gameEngine) {
-    console.warn("GameEngine이 초기화되지 않았습니다.");
-    return;
-  }
-
-  gameEngine.setCommandChangeCallback((command) => {
-    console.log("새로운 명령:", command);
-    // UI 업데이트 로직 추가 가능
-  });
-
-  gameEngine.setScoreChangeCallback((score, level) => {
-    console.log(`점수: ${score}, 레벨: ${level}`);
-    // UI 업데이트 로직 추가 가능
-  });
-
-  gameEngine.setGameEndCallback((finalScore, finalLevel) => {
-    console.log(`게임 종료! 최종 점수: ${finalScore}, 최종 레벨: ${finalLevel}`);
-    alert(`게임 종료!\n최종 점수: ${finalScore}\n최종 레벨: ${finalLevel}`);
-  });
-
-  gameEngine.start(config);
 }
