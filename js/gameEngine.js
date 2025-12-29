@@ -179,7 +179,7 @@ class GameEngine {
 
   saveHighScore(score) {
     const highScores = this.getHighScores();
-    highScores.push({ score: score, date: new Date().toLocaleDateString() });
+    highScores.push({ score: score, date: new Date().toLocaleString() });
     highScores.sort((a, b) => b.score - a.score);
     const topScores = highScores.slice(0, 5); // Keep top 5
     localStorage.setItem('fruitCatcherHighScores', JSON.stringify(topScores));
@@ -249,9 +249,7 @@ class GameEngine {
    * @param {CanvasRenderingContext2D} ctx 
    */
   draw(ctx) {
-    if (!this.isGameActive) return;
-
-    // 0. Draw Background
+    // 0. Draw Background (Always)
     if (this.backgroundImage.complete) {
       ctx.drawImage(this.backgroundImage, 0, 0, GAME_CONFIG.CANVAS_WIDTH, GAME_CONFIG.CANVAS_HEIGHT);
     } else {
@@ -264,6 +262,8 @@ class GameEngine {
       this.drawRanking(ctx);
       return;
     }
+
+    if (!this.isGameActive) return;
 
     // 1. Draw Lanes (Subtle lines)
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)'; // More visible on image

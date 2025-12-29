@@ -58,7 +58,19 @@ async function init() {
       // Alert and Ranking
       setTimeout(() => {
         alert(`Game Over! 🎮\nYour Score: ${finalScore}`);
-        if (gameEngine) gameEngine.showRanking = true;
+        // 3. Show Ranking & Re-enable Button after alert is closed
+        if (gameEngine) {
+          gameEngine.showRanking = true;
+
+          // Force render loop for Ranking Screen
+          function renderRanking() {
+            if (gameEngine.showRanking) {
+              gameEngine.draw(ctx);
+              requestAnimationFrame(renderRanking);
+            }
+          }
+          renderRanking();
+        }
         startBtn.disabled = false;
       }, 50);
     });
