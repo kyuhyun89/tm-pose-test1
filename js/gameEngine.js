@@ -178,16 +178,25 @@ class GameEngine {
 
 
   saveHighScore(score) {
-    const highScores = this.getHighScores();
-    highScores.push({ score: score, date: new Date().toLocaleString() });
-    highScores.sort((a, b) => b.score - a.score);
-    const topScores = highScores.slice(0, 5); // Keep top 5
-    localStorage.setItem('fruitCatcherHighScores', JSON.stringify(topScores));
+    try {
+      const highScores = this.getHighScores();
+      highScores.push({ score: score, date: new Date().toLocaleString() });
+      highScores.sort((a, b) => b.score - a.score);
+      const topScores = highScores.slice(0, 5); // Keep top 5
+      localStorage.setItem('fruitCatcherHighScores', JSON.stringify(topScores));
+    } catch (e) {
+      console.error("Failed to save high score:", e);
+    }
   }
 
   getHighScores() {
-    const stored = localStorage.getItem('fruitCatcherHighScores');
-    return stored ? JSON.parse(stored) : [];
+    try {
+      const stored = localStorage.getItem('fruitCatcherHighScores');
+      return stored ? JSON.parse(stored) : [];
+    } catch (e) {
+      console.error("Failed to load high scores:", e);
+      return [];
+    }
   }
 
   drawRanking(ctx) {
@@ -218,10 +227,11 @@ class GameEngine {
     });
 
     // Restart Hint
-    if (this.frameCount % 60 < 30) { // Blink effect
+    // Use Date.now() for blinking so it works even when game is paused
+    if (Math.floor(Date.now() / 500) % 2 === 0) {
       ctx.fillStyle = '#00FF00';
       ctx.font = '20px Arial';
-      ctx.fillText("Press Restart Button to Play Again", GAME_CONFIG.CANVAS_WIDTH / 2, 500);
+      ctx.fillText("Press Restart Button to Play Again", GAME_CONFIG.CANVAS_WIDTH / 2, 530);
     }
   }
 

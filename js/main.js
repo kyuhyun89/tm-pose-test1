@@ -64,7 +64,8 @@ async function init() {
 
           // Force render loop for Ranking Screen
           function renderRanking() {
-            if (gameEngine.showRanking) {
+            if (gameEngine && gameEngine.showRanking) {
+              ctx.clearRect(0, 0, 800, 600); // Clear before drawing
               gameEngine.draw(ctx);
               requestAnimationFrame(renderRanking);
             }
